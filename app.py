@@ -17,28 +17,11 @@ st.markdown(
 # --- SIDEBAR: API & MODELL ---
 with st.sidebar:
     st.header("⚙️ Konfiguration")
-    provider = st.selectbox(
-        "API-Provider",
-        ["Groq (Llama 3.1)", "xAI (Grok)"],
-    )
-
-    if provider == "Groq (Llama 3.1)":
-        base_url = "https://api.groq.com/openai/v1"
-        model_options = ["llama-3.1-8b-instant", "llama-3.3-70b-versatile"]
-        secret_name = "GROQ_API_KEY"
-    else:
-        base_url = "https://api.x.ai/v1"
-        model_options = ["grok-3-mini", "grok-2-latest"]
-        secret_name = "XAI_API_KEY"
-
-    default_key = st.secrets.get(secret_name, os.getenv(secret_name, ""))
-    api_key = st.text_input(
-        f"{secret_name}",
-        value=default_key,
-        type="password",
-        help="Kann für das Deployment auch in .streamlit/secrets.toml hinterlegt werden.",
-    )
-    selected_model = st.selectbox("Modell", model_options)
+    base_url = "https://api.groq.com/openai/v1"
+    provider = "Groq (Llama 3.1)"
+    model = "llama-3.1-8b-instant"
+    secret_name = "GROQ_API_KEY"
+    key = st.secrets.get(secret_name, os.getenv(secret_name, ""))
     framework_ref = st.text_input("Framework Repo (mckoh/...)", value="digicomp3-0")
 
 # --- HAUPTBEREICH ---
@@ -58,8 +41,8 @@ if st.button("Kompetenzen extrahieren", type="primary"):
             try:
                 extraction_result = extract(
                     text=course_text,
-                    api_key=api_key,
-                    model=selected_model,
+                    api_key=key,
+                    model="llama-3.1-8b-instant",
                     base_url=base_url,
                     framework_ref=framework_ref,
                 )
