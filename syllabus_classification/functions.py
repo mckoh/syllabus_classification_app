@@ -1,5 +1,5 @@
 """
-Syllabus Classification Functions (Cloud API Edition)
+Syllabus Classification Functions (Hugging Face Inference Edition)
 
 Author: Michael Kohlegger
 """
@@ -41,11 +41,9 @@ def is_valid_evidence(evidence: str, source_text: str, threshold: float = 0.80) 
     if not norm_evidence:
         return False
 
-    # 1. Fast-Path: Exakter Treffer
     if norm_evidence in norm_source:
         return True
 
-    # 2. Fuzzy-Matching via Sliding Window
     ev_len = len(norm_evidence)
     src_len = len(norm_source)
 
@@ -72,7 +70,6 @@ def is_valid_competence(competence: str, valid_competences: list[str], threshold
     if not competence or not valid_competences:
         return None
 
-    # 1. Exakter Treffer (Fast-Path)
     if competence in valid_competences:
         return competence
 
@@ -82,11 +79,9 @@ def is_valid_competence(competence: str, valid_competences: list[str], threshold
     }
     cleaned_input = re.sub(r"^\d+(\.\d+)*\s*", "", competence).strip().lower()
 
-    # 2. Exakter Treffer nach Bereinigung von Groß-/Kleinschreibung und Nummerierung
     if cleaned_input in cleaned_to_canonical:
         return cleaned_to_canonical[cleaned_input]
 
-    # 3. Fuzzy-Matching für Tippfehler
     matches = get_close_matches(
         cleaned_input,
         list(cleaned_to_canonical.keys()),
@@ -99,64 +94,60 @@ def is_valid_competence(competence: str, valid_competences: list[str], threshold
     return None
 
 
+def _clean_json_response(raw_content: str) -> str:
+    """Entfernt eventuelle Markdown-Codeblöcke um das JSON-Objekt."""
+    cleaned = raw_content.strip()
+    if cleaned.startswith("```"):
+        cleaned = re.sub(r"^```(?:json)?\s*", "", cleaned)
+        cleaned = re.sub(r"\s*```$", "", cleaned)
+    return cleaned.strip()
+
+
 def extract(
     text: str,
     api_key: str | None = None,
-    model: str = "llama-3.1-8b-instant",
-    base_url: str = "https://api.groq.com/openai/v1",
+    model: str = "meta-llama/Llama-3.1-8B-Instruct",
+    base_url: str = "[https://router.huggingface.co/v1](https://router.huggingface.co/v1)",
     framework_ref: str = "digicomp3-0",
 ) -> Extraction:
-    """Extracts and validates competences using an online OpenAI-compatible API (Groq / xAI Grok)."""
-    resolved_key = api_key or os.getenv("GROQ_API_KEY")
+    """Extracts and validates competences using Hugging Face Inference Providers."""
+    resolved_key = api_key or os.getenv("HF_TOKEN")
     if not resolved_key:
-        raise ValueError("Kein API-Key gefunden. Bitte GROQ_API_KEY setzen oder übergeben.")
+        raise ValueError("Kein Hugging Face Token gefunden. Bitte HF_TOKEN setzen oder übergeben.")
 
     client = OpenAI(api_key=resolved_key, base_url=base_url)
 
     framework = get_framework(reference=framework_ref)
     valid_names = extract_valid_names(framework)
     framework_str = framework if isinstance(framework, str) else json.dumps(framework, ensure_ascii=False, indent=2)
+    schema_str = json.dumps(Extraction.model_json_schema(), ensure_ascii=False)
 
     system_content = (
         f"{EXTRACTION_PROMPT}\n\n"
-        f"KOMPETENZRAHMEN (Englisch):\n```json\n{framework_str}\n```"
+        f"KOMPETENZRAHMEN (Englisch):\n```json\n{framework_str}\n```\n\n"
+        f"Antworte ausschließlich mit einem validen JSON-Objekt gemäß folgendem Schema:\n{schema_str}"
     )
 
     user_content = (
         f"KURSBESCHREIBUNG (Deutsch):\n```text\n{text}\n```"
     )
 
-    completion = client.beta.chat.completions.parse(
+    resp = client.chat.completions.create(
         model=model,
         messages=[
             {"role": "system", "content": system_content},
             {"role": "user", "content": user_content},
         ],
-        response_format=Extraction,
+        response_format={"type": "json_object"},
         temperature=EXTRACT_TEMPERATURE,
         max_tokens=INFERENCE_LENGTH,
     )
 
-    result: Extraction = completion.choices[0].message.parsed
+    raw_json = _clean_json_response(resp.choices[0].message.content)
+    result = Extraction.model_validate_json(raw_json)
 
     verified_competences = []
     seen_names = set()
 
     for c in result.competences:
-        # Guardrail 1: Steht das Zitat wirklich im Kurstext?
-        if not is_valid_evidence(c.evidence, text, threshold=0.80):
-            continue
-
-        # Guardrail 2: Existiert die Kompetenz im Rahmen (inkl. Auto-Korrektur)?
-        canonical_name = is_valid_competence(c.name, valid_names, threshold=0.85)
-        if not canonical_name:
-            continue
-
-        # Duplikate vermeiden
-        if canonical_name not in seen_names:
-            c.name = canonical_name
-            verified_competences.append(c)
-            seen_names.add(canonical_name)
-
-    result.competences = verified_competences
-    return result
+        if not

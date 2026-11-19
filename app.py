@@ -11,22 +11,24 @@ st.set_page_config(
 st.title("🎓 DigiComp Syllabus Kompetenz-Extraktion")
 st.markdown(
     "Extrahiert Kompetenzen aus deutschsprachigen Kursbeschreibungen gegen das **DigiComp-Framework** "
-    "inklusive automatischer Zitat- und Label-Validierung."
+    "inklusive automatischer Zitat- und Label-Validierung (powered by Hugging Face)."
 )
 
 # --- SIDEBAR: API & MODELL ---
 with st.sidebar:
     st.header("⚙️ Konfiguration")
-    base_url = "https://api.groq.com/openai/v1"
-    secret_name = "GROQ_API_KEY"
+    base_url = "[https://router.huggingface.co/v1](https://router.huggingface.co/v1)"
+    secret_name = "HF_TOKEN"
     key = st.secrets.get(secret_name, os.getenv(secret_name, ""))
 
+    if not key:
+        key = st.text_input("Hugging Face Token (`hf_...`)", type="password")
+
     model = st.selectbox(
-        "Groq Modell",
+        "Hugging Face Modell",
         [
-            "llama-3.3-70b-versatile",
-            "meta-llama/llama-4-scout-17b-16e-instruct",
-            "qwen/qwen3-32b",
+            "meta-llama/Llama-3.1-8B-Instruct",
+            "meta-llama/Llama-3.3-70B-Instruct",
         ],
     )
     framework_ref = st.text_input("Framework Repo (mckoh/...)", value="digicomp3-0")
@@ -40,7 +42,7 @@ course_text = st.text_area(
 
 if st.button("Kompetenzen extrahieren", type="primary"):
     if not key:
-        st.error(f"Kein `{secret_name}` in den Streamlit Secrets gefunden.")
+        st.error(f"Bitte hinterlege `{secret_name}` in den Streamlit Secrets oder gib den Token links ein.")
     elif not course_text.strip():
         st.warning("Bitte füge zuerst eine Kursbeschreibung ein.")
     else:
