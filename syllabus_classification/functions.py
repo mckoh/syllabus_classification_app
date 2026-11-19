@@ -103,6 +103,20 @@ def _clean_json_response(raw_content: str) -> str:
     return cleaned.strip()
 
 
+def _clean_json_response(raw_content: str) -> str:
+    """Extrahiert das JSON-Objekt auch bei Markdown-Fences oder einleitendem Text."""
+    cleaned = raw_content.strip()
+    if cleaned.startswith("```"):
+        cleaned = re.sub(r"^```(?:json)?\s*", "", cleaned)
+        cleaned = re.sub(r"\s*```$", "", cleaned)
+    # Schneidet eventuellen Text vor der ersten '{' und nach der letzten '}' ab
+    start = cleaned.find("{")
+    end = cleaned.rfind("}")
+    if start != -1 and end != -1 and end > start:
+        cleaned = cleaned[start : end + 1]
+    return cleaned.strip()
+
+
 def extract(
     text: str,
     api_key: str | None = None,
@@ -138,9 +152,8 @@ def extract(
             {"role": "system", "content": system_content},
             {"role": "user", "content": user_content},
         ],
-        response_format={"type": "json_object"},
         temperature=EXTRACT_TEMPERATURE,
-        max_tokens=INFERENCE_LENGTH,
+        max_tokens=min(INFERENCE_LENGTH, 2048),
     )
 
     raw_json = _clean_json_response(resp.choices[0].message.content)
