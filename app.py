@@ -27,8 +27,9 @@ with st.sidebar:
     model = st.selectbox(
         "Hugging Face Modell",
         [
-            "meta-llama/Llama-3.1-8B-Instruct",
-            "meta-llama/Llama-3.3-70B-Instruct",
+            "meta-llama/Llama-3.1-8B-Instruct:novita",
+            "meta-llama/Llama-3.1-8B-Instruct:fastest",
+            "meta-llama/Llama-3.3-70B-Instruct:fastest",
         ],
     )
     framework_ref = st.text_input("Framework Repo (mckoh/...)", value="digicomp3-0")
