@@ -32,36 +32,32 @@ course_text = st.text_area(
 )
 
 if st.button("Kompetenzen extrahieren", type="primary"):
-    if not api_key:
-        st.error(f"Bitte gib einen gültigen `{secret_name}` in der Seitenleiste ein.")
-    elif not course_text.strip():
-        st.warning("Bitte füge zuerst eine Kursbeschreibung ein.")
-    else:
-        with st.spinner(f"Analysiere Kursbeschreibung mit `{selected_model}`..."):
-            try:
-                extraction_result = extract(
-                    text=course_text,
-                    api_key=key,
-                    model="llama-3.1-8b-instant",
-                    base_url=base_url,
-                    framework_ref=framework_ref,
+
+    with st.spinner(f"Analysiere Kursbeschreibung mit `{selected_model}`..."):
+        try:
+            extraction_result = extract(
+                text=course_text,
+                api_key=key,
+                model="llama-3.1-8b-instant",
+                base_url=base_url,
+                framework_ref=framework_ref,
+            )
+
+            competences = extraction_result.competences
+            st.subheader(f"Verifizierte Kompetenzen ({len(competences)})")
+
+            if not competences:
+                st.info(
+                    "Es konnten keine Kompetenzen extrahiert werden, die sowohl dem "
+                    "DigiComp-Katalog entsprechen als auch wörtlich im Text belegt sind."
                 )
+            else:
+                # Dynamische Aufbereitung aller Felder deines Pydantic-Modells Extraction
+                rows = [c.model_dump() for c in competences]
+                st.dataframe(rows, use_container_width=True)
 
-                competences = extraction_result.competences
-                st.subheader(f"Verifizierte Kompetenzen ({len(competences)})")
+                with st.expander("JSON-Output anzeigen"):
+                    st.json(extraction_result.model_dump())
 
-                if not competences:
-                    st.info(
-                        "Es konnten keine Kompetenzen extrahiert werden, die sowohl dem "
-                        "DigiComp-Katalog entsprechen als auch wörtlich im Text belegt sind."
-                    )
-                else:
-                    # Dynamische Aufbereitung aller Felder deines Pydantic-Modells Extraction
-                    rows = [c.model_dump() for c in competences]
-                    st.dataframe(rows, use_container_width=True)
-
-                    with st.expander("JSON-Output anzeigen"):
-                        st.json(extraction_result.model_dump())
-
-            except Exception as e:
-                st.error(f"Fehler bei der Klassifikation: {e}")
+        except Exception as e:
+            st.error(f"Fehler bei der Klassifikation: {e}")
