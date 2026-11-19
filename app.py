@@ -33,7 +33,7 @@ course_text = st.text_area(
 
 if st.button("Kompetenzen extrahieren", type="primary"):
 
-    with st.spinner(f"Analysiere Kursbeschreibung mit `{selected_model}`..."):
+    with st.spinner(f"Analysiere Kursbeschreibung mit Sprachmodell..."):
         try:
             extraction_result = extract(
                 text=course_text,
