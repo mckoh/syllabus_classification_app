@@ -1,6 +1,6 @@
 import os
 import streamlit as st
-from syllabus_classification import extract  # Pfad ggf. an dein Paket anpassen
+from syllabus_classification.functions import extract
 
 st.set_page_config(
     page_title="DigiComp Syllabus Klassifikator",
