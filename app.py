@@ -17,9 +17,9 @@ st.markdown(
 # --- SIDEBAR: API & MODELL ---
 with st.sidebar:
     st.header("⚙️ Konfiguration")
-    base_url = "[https://router.huggingface.co/v1](https://router.huggingface.co/v1)"
+    base_url = "https://router.huggingface.co/hf-inference/v1"
     secret_name = "HF_TOKEN"
-    key = st.secrets.get(secret_name, os.getenv(secret_name, ""))
+    key = st.secrets.get(secret_name, os.getenv(secret_name, "")).strip()
 
     if not key:
         key = st.text_input("Hugging Face Token (`hf_...`)", type="password")
