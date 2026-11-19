@@ -72,4 +72,4 @@ if st.button("Kompetenzen extrahieren", type="primary"):
                         st.json(extraction_result.model_dump())
 
             except Exception as e:
-                st.error(f"Fehler bei der Klassifikation: {e}")
+                st.write(getattr(e, "body", str(e)))
